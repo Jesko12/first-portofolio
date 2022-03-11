@@ -1,0 +1,62 @@
+image: node:12.14.1
+
+stages:
+  - build_dev
+  - deploy_dev
+  - build
+  - deploy
+
+cache:
+  paths:
+    - node_modules/
+
+
+build_dev:
+  stage: build
+  only:
+    - develop
+  before_script:
+    - echo "running builds"
+  script:
+    - yarn install
+    - yarn build
+
+deploy_dev:
+  stage: deploy
+  image: ruby:2.4
+  only:
+    - develop
+  before_script:
+    - gem install dpl
+    - wget -qO- https://cli-assets.heroku.com/install-ubuntu.sh | sh
+  script:
+    - apt-get update -qy
+    - apt-get install -y ruby-dev
+    - gem install dpl
+    - dpl --provider=heroku --app=$HEROKU_APP_DEV --api-key=$HEROKU_API_KEY --skip-cleanup
+
+build:
+  stage: build
+  only:
+    - master
+  when: manual
+  before_script:
+    - echo "running builds"
+  script:
+    - yarn install
+    - yarn build
+
+deploy:
+  stage: deploy
+  image: ruby:2.4
+  only:
+    - master
+  when: manual
+  before_script:
+    - gem install dpl
+    - wget -qO- https://cli-assets.heroku.com/install-ubuntu.sh | sh
+  script:
+    - apt-get update -qy
+    - apt-get install -y ruby-dev
+    - gem install dpl
+    - dpl --provider=heroku --app=$HEROKU_APP_PROD --api-key=$HEROKU_API_KEY --skip-cleanup
